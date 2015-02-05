@@ -1,0 +1,8 @@
+.idea/
+*.iml
+target/
+tmp/*
+newBase/*
+OLD_base.db
+eans/*
+report/*
