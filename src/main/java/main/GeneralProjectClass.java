@@ -20,7 +20,7 @@ import java.util.List;
 
 public class GeneralProjectClass {
     public static String DBASE_PATH = "jdbc:sqlite:./base.db";
-    public static final String VERSION = "0.54";
+    public static final String VERSION = "0.55";
     public JButton buttonSearch;
     public JButton buttonAdd;
     public JButton buttonBack;
@@ -35,27 +35,12 @@ public class GeneralProjectClass {
     public JFrame frame;
     public String removableId;
     public Stack<Map<String, String>> historyMove;
+    public List<String[]> convertableList = new ArrayList<>();
 
     public String convertTableCaption(String caption) {
         String result = caption;
-        List<String[]> list = new ArrayList<>();
-        list.add(new String[]{"NAME", "Наименование"});
-        list.add(new String[]{"EAN", "Штрих-Код"});
-        list.add(new String[]{"DESCRIPTION", "Описание"});
-        list.add(new String[]{"COD", "Бух-код"});
-        list.add(new String[]{"TYPEID", "Тип"});
-        list.add(new String[]{"STATEID", "Состояние"});
-        list.add(new String[]{"USERID", "Владелец"});
-        list.add(new String[]{"OBJECTID", "Объект"});
-        list.add(new String[]{"DATE", "Дата"});
-        list.add(new String[]{"DEPARTMENTID", "Отдел"});
-        list.add(new String[]{"FIO", "Ф.И.О."});
-        list.add(new String[]{"JOB", "Должность"});
-        list.add(new String[]{"PHONE", "Телефон"});
-        list.add(new String[]{"NETNAME", "Сетевое имя"});
-        list.add(new String[]{"ROOMID", "Кабинет"});
 
-        for(String [] entry: list){
+        for(String [] entry: convertableList){
             if(caption.toUpperCase().equals(entry[0].toUpperCase())){
                 result = entry[1];
                 break;
@@ -481,7 +466,7 @@ public class GeneralProjectClass {
                     if(userId.length()<1)
                         userId="1";
                     isNeedPostInsert=true;
-                    query = "INSERT INTO object (EAN,COD,NAME,TYPEID,STATEID,USERID) VALUES (\""+changeMeCaption+"\",\"\",\"\",1,1,"+userId+");";
+                    query = "INSERT INTO object (EAN,COD,NAME,TYPEID,STATEID,USERID) VALUES (\""+String.valueOf(System.currentTimeMillis())+"\",\"\",\"\",1,1,"+userId+");";
                     stmt.executeUpdate(query);
                     break;
                 case "OBJECTTYPE":
@@ -540,49 +525,55 @@ public class GeneralProjectClass {
         pane.setLayout(new GridBagLayout());
         final GridBagConstraints c = new GridBagConstraints();
 
+        // LINE BROWSER
         System.out.println("MAIN PATH: ");
         StringBuilder resultPathString = new StringBuilder();
         for(Map<String,String> i : historyMove) {
-            System.out.println(i.get("table"));
+            String nameItem = i.get("name");
             switch (i.get("table").toUpperCase()){
-                case "DEPARTMENT":
-                    resultPathString.append(" > " + "Отдел");
-                    break;
-                case "ROOM":
-                    resultPathString.append(" > " + "Кабинет");
-                    break;
                 case "USER":
                     if(i.get("query").toUpperCase().contains("WHERE"))
-                        resultPathString.append(" > " + "Сотрудники");
+                        resultPathString.append(" > " + nameItem);
                     else
                         resultPathString.append(" > " + "Все Сотрудники");
                     break;
                 case "OBJECT":
                     if(i.get("query").toUpperCase().contains("WHERE"))
-                        resultPathString.append(" > " + "Оборудование");
+                        resultPathString.append(" > " + nameItem);
                     else
                         resultPathString.append(" > " + "Все Оборудование");
                     break;
-                case "OBJECTHISTORY":
-                    resultPathString.append(" > " + "История");
-                    break;
-
+                default:
+                    resultPathString.append(" > " + nameItem);
             }
 
         }
-        frame.setTitle(resultPathString.toString().replaceAll("^ > ",""));
-        JLabel textPath = new JLabel(resultPathString.toString());
-        textPath.setFont(new Font("Serif", Font.BOLD, 11));
-        textPath.setFont(new Font("Courier New", Font.BOLD, 11));
+//        frame.setTitle(resultPathString.toString().replaceAll("^ > ",""));
+
+//        JLabel textPath = new JLabel("<html>"+resultPathString.toString().replaceAll("^ > ","")+"</html>");
+        JTextField textPath = new JTextField(resultPathString.toString().replaceAll("^ > ",""));
+        textPath.setEditable(false);
+        textPath.setEnabled(false);
+        textPath.setDisabledTextColor(Color.BLACK);
+
+//        textPath.setFont(new Font("Serif", Font.BOLD, 11));
+//        textPath.setFont(new Font("Courier New", Font.BOLD, 11));
         textPath.setFont(new Font("TimesRoman", Font.BOLD, 11));
-        textPath.setFont(new Font("Verdana", Font.BOLD, 11));
+//        textPath.setFont(new Font("Verdana", Font.BOLD, 11));
         c.insets = new Insets(5, 5, 5, 5);
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 5.0;
         c.gridwidth = 2;
         c.gridx = 0;
-        c.gridy = 0;
+        c.gridy = 1;
         c.gridheight=1;
+        pane.add(textPath, c);
+
+        JLabel emptyLabel = new JLabel();
+        c.weightx = 0.5;
+        c.gridx = 3;
+        c.gridy = 1;
+        pane.add(emptyLabel, c);
 
         textField = new JTextField("");
         textField.setFont(new Font("Verdana", Font.PLAIN, 20));
@@ -697,7 +688,7 @@ public class GeneralProjectClass {
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 0.5;
         c.gridx = 3;
-        c.gridy = 2;
+        c.gridy = 3;
         pane.add(buttonAdd, c);
 
         icon = new ImageIcon("./icons/delete32.png");
@@ -728,7 +719,7 @@ public class GeneralProjectClass {
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 0.5;
         c.gridx = 3;
-        c.gridy = 3;
+        c.gridy = 4;
         pane.add(buttonDelete, c);
 
         icon = new ImageIcon("./icons/back32.png");
@@ -742,6 +733,9 @@ public class GeneralProjectClass {
                     historyMove.pop();
                     try {
                         refreshForm(pane);
+                        jtable.requestFocus();
+                        jtable.setRowSelectionInterval(0, 0);
+                        jtable.setColumnSelectionInterval(1,1);
                     } catch (Exception e1) {
                         e1.printStackTrace();
                     }
@@ -751,7 +745,7 @@ public class GeneralProjectClass {
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 0.5;
         c.gridx = 3;
-        c.gridy = 1;
+        c.gridy = 2;
         pane.add(buttonBack, c);
 
         icon = new ImageIcon("./icons/user32.png");
@@ -774,7 +768,7 @@ public class GeneralProjectClass {
         });
         c.weightx = 0.5;
         c.gridx = 3;
-        c.gridy = 4;
+        c.gridy = 6;
         pane.add(buttonUser, c);
 
         icon = new ImageIcon("./icons/object32.png");
@@ -857,7 +851,7 @@ public class GeneralProjectClass {
         });
         c.weightx = 0.5;
         c.gridx = 3;
-        c.gridy = 6;
+        c.gridy = 7;
         pane.add(buttonPrint, c);
 
         icon = new ImageIcon("./icons/repair32.png");
@@ -874,13 +868,14 @@ public class GeneralProjectClass {
                 Map<String, String> history = new HashMap<>();
                 history.put("table", "objecthistory");
                 history.put("query",resultQuery);
+                history.put("name","Ремонт");
                 historyMove.push(history);
                 refreshForm(pane);
             }
         });
         c.weightx = 0.5;
         c.gridx = 3;
-        c.gridy = 7;
+        c.gridy = 8;
         pane.add(buttonRepair, c);
 
         jtable = new JTable();
@@ -930,6 +925,7 @@ public class GeneralProjectClass {
                     switch (historyMove.peek().get("table").toUpperCase()){
                         case "ROOM":
                             Map<String, String> user = new HashMap<>();
+                            user.put("name", getComboBoxSingleDataDB("select name from room where id=" + id + ";"));
                             user.put("table", "user");
                             user.put("query", "SELECT * FROM USER WHERE ROOMID="+id+";");
                             historyMove.push(user);
@@ -937,6 +933,7 @@ public class GeneralProjectClass {
                             break;
                         case "DEPARTMENT":
                             Map<String, String> department = new HashMap<>();
+                            department.put("name", getComboBoxSingleDataDB("select name from department where id=" + id + ";"));
                             department.put("table", "room");
                             department.put("query", "SELECT * FROM ROOM WHERE DEPARTMENTID="+id+";");
                             historyMove.push(department);
@@ -945,6 +942,7 @@ public class GeneralProjectClass {
                         case "USER":
                             Map<String, String> object = new HashMap<>();
                             object.put("table", "object");
+                            object.put("name", getComboBoxSingleDataDB("select fio from USER where id=" + id + ";"));
                             object.put("query", "SELECT * FROM OBJECT WHERE USERID="+id+";");
                             historyMove.push(object);
                             refreshForm(pane);
@@ -954,6 +952,7 @@ public class GeneralProjectClass {
                                 case "TYPEID":
                                     Map<String, String> type = new HashMap<>();
                                     type.put("table", "OBJECTTYPE");
+                                    type.put("name", "Виды техники");
                                     type.put("query", "SELECT * FROM OBJECTTYPE;");
                                     historyMove.push(type);
                                     try {
@@ -965,6 +964,7 @@ public class GeneralProjectClass {
                                 case "STATEID":
                                     Map<String, String> state = new HashMap<>();
                                     state.put("table", "OBJECTSTATE");
+                                    state.put("name", "Состояния");
                                     state.put("query", "SELECT * FROM OBJECTSTATE;");
                                     historyMove.push(state);
                                     try {
@@ -977,6 +977,7 @@ public class GeneralProjectClass {
                                     System.out.printf("go to object history. obj id = "+id);
                                     Map<String, String> history = new HashMap<>();
                                     history.put("table", "OBJECTHISTORY");
+                                    history.put("name", getComboBoxSingleDataDB("select name from object where id=" + id + ";"));
                                     history.put("query", "SELECT * FROM OBJECTHISTORY where OBJECTID="+id+";");
                                     historyMove.push(history);
                                     try {
@@ -998,16 +999,18 @@ public class GeneralProjectClass {
             }
         });
         jtable.setFont(new Font("Verdana", Font.PLAIN, 12));
+        jtable.setColumnSelectionAllowed(true);
 
+        //jtable
         c.fill = GridBagConstraints.BOTH;
         c.ipady = 200;
         c.ipadx = 200;
         c.weightx = 5.0;
         c.weighty = 5.0;
         c.gridwidth = 3;
-        c.gridheight = 8;
+        c.gridheight = 10;
         c.gridx = 0;
-        c.gridy = 1;
+        c.gridy = 2;
         c.insets = new Insets(5, 5, 5, 5);
         pane.add(jScrollPane, c);
 
@@ -1039,33 +1042,71 @@ public class GeneralProjectClass {
 
         // create comboBox (комбобокс)
         if(jtable.getRowCount()>0) {
-            JComboBox comboBox;
             String query2;
             String found;
             switch (historyMove.peek().get("table").toUpperCase()) {
                 case "USER":
-                    comboBox = new JComboBox(getComboBoxDataDB("ROOM", "NAME").toArray());
+                    JComboBox comboBoxUser = new JComboBox(getComboBoxDataDB("ROOM", "NAME").toArray());
+                    //right mouse on combobox
+                    comboBoxUser.addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseReleased(MouseEvent e) {
+                            super.mouseReleased(e);
+                            if (SwingUtilities.isRightMouseButton(e) && jtable.getSelectedRow() != -1 && jtable.getSelectedColumn() != -1) {
+                                Map<String, String> type = new HashMap<String, String>();
+                                type.put("table", "ROOM");
+                                type.put("name", "Комнаты");
+                                type.put("query", "SELECT * FROM ROOM;");
+                                historyMove.push(type);
+                                try {
+                                    refreshForm(pane);
+                                } catch (Exception e1) {
+                                    e1.printStackTrace();
+                                }
+                            }
+                        }
+                    });
                     for (int i = 0; i < jtable.getRowCount(); i++) {
                         query2 = "select name from room where id=" + jtable.getValueAt(i, jtable.getColumn(convertTableCaption("ROOMID")).getModelIndex()) + ";";
                         found = getComboBoxSingleDataDB(query2);
                         System.out.println("found : " + found);
                         jtable.setValueAt(found, i, jtable.getColumn(convertTableCaption("ROOMID")).getModelIndex());
                     }
-                    jtable.getColumnModel().getColumn(jtable.getColumn(convertTableCaption("ROOMID")).getModelIndex()).setCellEditor(new DefaultCellEditor(comboBox));
+                    jtable.getColumnModel().getColumn(jtable.getColumn(convertTableCaption("ROOMID")).getModelIndex()).setCellEditor(new DefaultCellEditor(comboBoxUser));
                     break;
                 case "ROOM":
-                    comboBox = new JComboBox(getComboBoxDataDB("DEPARTMENT", "NAME").toArray());
+                    JComboBox comboBoxRoom = new JComboBox(getComboBoxDataDB("DEPARTMENT", "NAME").toArray());
+                    //right mouse on combobox
+                    comboBoxRoom.addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseReleased(MouseEvent e) {
+                            super.mouseReleased(e);
+                            if (SwingUtilities.isRightMouseButton(e) && jtable.getSelectedRow() != -1 && jtable.getSelectedColumn() != -1) {
+                                Map<String, String> type = new HashMap<String, String>();
+                                type.put("table", "DEPARTMENT");
+                                type.put("name", "Отделы");
+                                type.put("query", "SELECT * FROM DEPARTMENT;");
+                                historyMove.push(type);
+                                try {
+                                    refreshForm(pane);
+                                } catch (Exception e1) {
+                                    e1.printStackTrace();
+                                }
+                            }
+                        }
+                    });
                     query2 = "select name from DEPARTMENT where id=" + jtable.getValueAt(0, jtable.getColumn(convertTableCaption("DEPARTMENTID")).getModelIndex()) + ";";
                     found = getComboBoxSingleDataDB(query2);
                     System.out.println("found : " + found);
                     for (int i = 0; i < jtable.getRowCount(); i++) {
                         jtable.setValueAt(found, i, jtable.getColumn(convertTableCaption("DEPARTMENTID")).getModelIndex());
                     }
-                    jtable.getColumnModel().getColumn(jtable.getColumn(convertTableCaption("DEPARTMENTID")).getModelIndex()).setCellEditor(new DefaultCellEditor(comboBox));
+                    jtable.getColumnModel().getColumn(jtable.getColumn(convertTableCaption("DEPARTMENTID")).getModelIndex()).setCellEditor(new DefaultCellEditor(comboBoxRoom));
                     break;
                 case "OBJECT":
                     JComboBox comboBoxType = new JComboBox(getComboBoxDataDB("OBJECTTYPE", "NAME").toArray());
 
+                    //right mouse on combobox
                     comboBoxType.addMouseListener(new MouseAdapter() {
                         @Override
                         public void mouseReleased(MouseEvent e) {
@@ -1073,6 +1114,7 @@ public class GeneralProjectClass {
                             if (SwingUtilities.isRightMouseButton(e) && jtable.getSelectedRow() != -1 && jtable.getSelectedColumn() != -1) {
                                 Map<String, String> type = new HashMap<String, String>();
                                 type.put("table", "OBJECTTYPE");
+                                type.put("name", "Виды техники");
                                 type.put("query", "SELECT * FROM OBJECTTYPE;");
                                 historyMove.push(type);
                                 try {
@@ -1092,6 +1134,7 @@ public class GeneralProjectClass {
                             if (SwingUtilities.isRightMouseButton(e) && jtable.getSelectedRow() != -1 && jtable.getSelectedColumn() != -1) {
                                 Map<String, String> state = new HashMap<String, String>();
                                 state.put("table", "OBJECTSTATE");
+                                state.put("name", "Состояния");
                                 state.put("query", "SELECT * FROM OBJECTSTATE;");
                                 historyMove.push(state);
                                 try {
@@ -1103,7 +1146,7 @@ public class GeneralProjectClass {
                         }
                     });
 
-                    JComboBox comboBoxUser = new JComboBox(getComboBoxDataDB("USER", "FIO").toArray());
+                    comboBoxUser = new JComboBox(getComboBoxDataDB("USER", "FIO").toArray());
 
                     for (int i = 0; i < jtable.getRowCount(); i++) {
                         query2 = "select name from OBJECTTYPE where id=" + jtable.getValueAt(i, jtable.getColumn(convertTableCaption("TYPEID")).getModelIndex()) + ";";
@@ -1171,6 +1214,22 @@ public class GeneralProjectClass {
 
     private void createAndShowGUI() throws SQLException, ClassNotFoundException, FileNotFoundException {
 
+        convertableList.add(new String[]{"NAME", "Наименование"});
+        convertableList.add(new String[]{"EAN", "Штрих-Код"});
+        convertableList.add(new String[]{"DESCRIPTION", "Описание"});
+        convertableList.add(new String[]{"COD", "Бух-код"});
+        convertableList.add(new String[]{"TYPEID", "Тип"});
+        convertableList.add(new String[]{"STATEID", "Состояние"});
+        convertableList.add(new String[]{"USERID", "Владелец"});
+        convertableList.add(new String[]{"OBJECTID", "Объект"});
+        convertableList.add(new String[]{"DATE", "Дата"});
+        convertableList.add(new String[]{"DEPARTMENTID", "Отдел"});
+        convertableList.add(new String[]{"FIO", "Ф.И.О."});
+        convertableList.add(new String[]{"JOB", "Должность"});
+        convertableList.add(new String[]{"PHONE", "Телефон"});
+        convertableList.add(new String[]{"NETNAME", "Сетевое имя"});
+        convertableList.add(new String[]{"ROOMID", "Кабинет"});
+
         //find database near the project.
         getDbasePath();
 
@@ -1181,6 +1240,7 @@ public class GeneralProjectClass {
         Map<String, String> department = new HashMap<>();
         department.put("query", "SELECT * FROM department;");
         department.put("table", "department");
+        department.put("name", "Путь:");
         historyMove.push(department);
 
         addComponentsToPane(frame.getContentPane());
