@@ -1,11 +1,12 @@
 package main;
 
 
-import com.toedter.calendar.JCalendar;
-import com.toedter.calendar.JDateChooserCellEditor;
-import org.jdesktop.swingx.JXDatePicker;
 import org.jdesktop.swingx.table.DatePickerCellEditor;
 
+import javax.swing.*;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
@@ -16,14 +17,10 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Date;
 import java.util.List;
-import javax.swing.*;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
-import javax.swing.table.DefaultTableModel;
 
 public class GeneralProjectClass {
     public static String DBASE_PATH = "jdbc:sqlite:./base.db";
-    public static final String VERSION = "0.53";
+    public static final String VERSION = "0.54";
     public JButton buttonSearch;
     public JButton buttonAdd;
     public JButton buttonBack;
@@ -38,6 +35,42 @@ public class GeneralProjectClass {
     public JFrame frame;
     public String removableId;
     public Stack<Map<String, String>> historyMove;
+
+    public String convertTableCaption(String caption) {
+        String result = caption;
+        List<String[]> list = new ArrayList<>();
+        list.add(new String[]{"NAME", "Наименование"});
+        list.add(new String[]{"EAN", "Штрих-Код"});
+        list.add(new String[]{"DESCRIPTION", "Описание"});
+        list.add(new String[]{"COD", "Бух-код"});
+        list.add(new String[]{"TYPEID", "Тип"});
+        list.add(new String[]{"STATEID", "Состояние"});
+        list.add(new String[]{"USERID", "Владелец"});
+        list.add(new String[]{"OBJECTID", "Объект"});
+        list.add(new String[]{"DATE", "Дата"});
+        list.add(new String[]{"DEPARTMENTID", "Отдел"});
+        list.add(new String[]{"FIO", "Ф.И.О."});
+        list.add(new String[]{"JOB", "Должность"});
+        list.add(new String[]{"PHONE", "Телефон"});
+        list.add(new String[]{"NETNAME", "Сетевое имя"});
+        list.add(new String[]{"ROOMID", "Кабинет"});
+
+        for(String [] entry: list){
+            if(caption.toUpperCase().equals(entry[0].toUpperCase())){
+                result = entry[1];
+                break;
+            }else if (caption.toUpperCase().equals(entry[1].toUpperCase())){
+                result = entry[0];
+                break;
+            }
+        }
+
+        if(result.equals(caption))
+            System.out.println("unknown convertation "+caption);
+
+
+        return result;
+    }
 
     public void getDbasePath() throws FileNotFoundException {
         File file = new File("./");
@@ -85,7 +118,7 @@ public class GeneralProjectClass {
         Vector<String> columnNames = new Vector<String>();
         int columnCount = metaData.getColumnCount();
         for (int column = 1; column <= columnCount; column++) {
-            columnNames.add(metaData.getColumnName(column));
+            columnNames.add(convertTableCaption(metaData.getColumnName(column)));
         }
 
         // data of the table
@@ -113,7 +146,7 @@ public class GeneralProjectClass {
                     if (e.getType() == TableModelEvent.UPDATE && e.getColumn() != -1 && jtable.getSelectedRow()!=-1 && !historyMove.peek().get("table").toUpperCase().equals("OBJECTHISTORY")) {
                         System.out.println("UPDATE CELL");
                         int updatedColIndex = e.getColumn();
-                        String updateColmn = jtable.getColumnName(updatedColIndex);
+                        String updateColmn = convertTableCaption(jtable.getColumnName(updatedColIndex));
                         String updatedValue = (String) model.getValueAt(rowFirstIndex, updatedColIndex);
                         System.out.println("column: " + updateColmn + " value: " + updatedValue);
                         String id = String.valueOf(model.getValueAt(rowFirstIndex, jtable.getColumn("ID").getModelIndex()));
@@ -140,8 +173,8 @@ public class GeneralProjectClass {
                                 break;
                             case "STATEID":
                                 changedId = getComboBoxSingleDataDB("select id from objectstate where name=\""+updatedValue+"\"");
-                                String username = String.valueOf(jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn("USERID").getModelIndex()));
-                                String objectName = String.valueOf(jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn("NAME").getModelIndex()));
+                                String username = String.valueOf(jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn(convertTableCaption("USERID")).getModelIndex()));
+                                String objectName;
                                 String userID = getComboBoxSingleDataDB("select id from user where fio=\"" + username + "\"");
 
                                 System.out.println("TO CHANGE: "+changedId);
@@ -173,8 +206,8 @@ public class GeneralProjectClass {
                                 System.out.println("add to history about user.");
                                 System.out.println("1 objid = "+id);
 
-                                String state = String.valueOf(jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn("STATEID").getModelIndex()));
-                                objectName = String.valueOf(jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn("NAME").getModelIndex()));
+                                String state = String.valueOf(jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn(convertTableCaption("STATEID")).getModelIndex()));
+                                objectName = String.valueOf(jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn(convertTableCaption("NAME")).getModelIndex()));
                                 System.out.println("3 userName = " + objectName);
                                 String stateId=null;
                                 stateId = getComboBoxSingleDataDB("select id from objectstate where name=\""+state+"\"");
@@ -227,10 +260,10 @@ public class GeneralProjectClass {
                             Map<String, String> dataMap = new HashMap<String, String>();
 
                             for (int j = 0; j < rowData.size(); j++) {
-                                if (jtable.getColumnName(j).toUpperCase().equals("ID"))
+                                if (convertTableCaption(jtable.getColumnName(j)).toUpperCase().equals("ID"))
                                     continue;
-                                dataMap.put(jtable.getColumnName(j), (String) rowData.get(j));
-                                System.out.println(jtable.getColumnName(j));
+                                dataMap.put(convertTableCaption(jtable.getColumnName(j)), (String) rowData.get(j));
+                                System.out.println(convertTableCaption(jtable.getColumnName(j)));
                                 System.out.println((String) rowData.get(j));
                             }
                             try {
@@ -247,7 +280,7 @@ public class GeneralProjectClass {
                     } else if (e.getType() == TableModelEvent.UPDATE && e.getColumn() != -1 && jtable.getSelectedRow()!=-1 && historyMove.peek().get("table").toUpperCase().equals("OBJECTHISTORY")) {
                         System.out.println("EDIT OBJECT HISTORY!");
                         int updatedColIndex = e.getColumn();
-                        String updateColmnName = jtable.getColumnName(updatedColIndex);
+                        String updateColumnName = convertTableCaption(jtable.getColumnName(updatedColIndex));
                         String updatedValue;
                         Object result = model.getValueAt(rowFirstIndex, updatedColIndex);
                         if(result.getClass() == Date.class) {
@@ -257,9 +290,9 @@ public class GeneralProjectClass {
                             updatedValue = (String) result;
                         }
                         String id = String.valueOf(model.getValueAt(rowFirstIndex, jtable.getColumn("ID").getModelIndex()));
-                        System.out.println("column: " + updateColmnName + " value: " + updatedValue+" id: "+id);
+                        System.out.println("column: " + updateColumnName + " value: " + updatedValue+" id: "+id);
 
-                        switch (updateColmnName.toUpperCase()){
+                        switch (updateColumnName.toUpperCase()){
                             case "DATE":
                                 if (updatedValue.toString().length()>0)
                                 updateDB("update objecthistory set date=datetime('"+updatedValue+"') where id="+id+";");
@@ -780,10 +813,10 @@ public class GeneralProjectClass {
 //                    if(historyMove.peek().get("table").toUpperCase().toString().equals("OBJECT") && jtable.getSelectedColumn()!=-1 && jtable.getSelectedRow()!=-1){
                     if(jtable.getSelectedColumn()!=-1 && jtable.getSelectedRow()!=-1){
                         System.out.println("object");
-                        String ean= jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn("EAN").getModelIndex()).toString();
-                        String cod= jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn("COD").getModelIndex()).toString();
-                        String name= jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn("NAME").getModelIndex()).toString();
-                        String typeId= jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn("TYPEID").getModelIndex()).toString();
+                        String ean= jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn(convertTableCaption("EAN")).getModelIndex()).toString();
+                        String cod= jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn(convertTableCaption("COD")).getModelIndex()).toString();
+                        String name= jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn(convertTableCaption("NAME")).getModelIndex()).toString();
+                        String typeId= jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn(convertTableCaption("TYPEID")).getModelIndex()).toString();
                         System.out.println(ean + " " + cod + " " + name);
                         try {
                             new BarCodeGenerator().printBarcode(ean,cod+" "+typeId+" "+name);
@@ -798,11 +831,11 @@ public class GeneralProjectClass {
                         Map<String, String> map;
                         String user = "nobody";
                         for (int i = 0; i < jtable.getRowCount(); i++) {
-                            String typeId = jtable.getValueAt(i, jtable.getColumn("TYPEID").getModelIndex()).toString();
-                            String name = jtable.getValueAt(i, jtable.getColumn("NAME").getModelIndex()).toString();
-                            String ean = jtable.getValueAt(i, jtable.getColumn("EAN").getModelIndex()).toString();
-                            String code = jtable.getValueAt(i, jtable.getColumn("COD").getModelIndex()).toString();
-                            user = jtable.getValueAt(i, jtable.getColumn("USERID").getModelIndex()).toString();
+                            String typeId = jtable.getValueAt(i, jtable.getColumn(convertTableCaption("TYPEID")).getModelIndex()).toString();
+                            String name = jtable.getValueAt(i, jtable.getColumn(convertTableCaption("NAME")).getModelIndex()).toString();
+                            String ean = jtable.getValueAt(i, jtable.getColumn(convertTableCaption("EAN")).getModelIndex()).toString();
+                            String code = jtable.getValueAt(i, jtable.getColumn(convertTableCaption("COD")).getModelIndex()).toString();
+                            user = jtable.getValueAt(i, jtable.getColumn(convertTableCaption("USERID")).getModelIndex()).toString();
                             map = new HashMap<>();
                             map.put("type",typeId);
                             map.put("name", name);
@@ -892,7 +925,7 @@ public class GeneralProjectClass {
                     System.out.println(jtable.getValueAt(jtable.getSelectedRow(), jtable.getSelectedColumn()).toString());
                     String id = jtable.getValueAt(jtable.getSelectedRow(), jtable.getColumn("ID").getModelIndex()).toString();
                     System.out.println("MAIN ID=" + id);
-                    String columnName = jtable.getColumnName(jtable.getSelectedColumn());
+                    String columnName = convertTableCaption(jtable.getColumnName(jtable.getSelectedColumn()));
                     System.out.println("Column name : "+columnName);
                     switch (historyMove.peek().get("table").toUpperCase()){
                         case "ROOM":
@@ -1013,22 +1046,22 @@ public class GeneralProjectClass {
                 case "USER":
                     comboBox = new JComboBox(getComboBoxDataDB("ROOM", "NAME").toArray());
                     for (int i = 0; i < jtable.getRowCount(); i++) {
-                        query2 = "select name from room where id=" + jtable.getValueAt(i, jtable.getColumn("ROOMID").getModelIndex()) + ";";
+                        query2 = "select name from room where id=" + jtable.getValueAt(i, jtable.getColumn(convertTableCaption("ROOMID")).getModelIndex()) + ";";
                         found = getComboBoxSingleDataDB(query2);
                         System.out.println("found : " + found);
-                        jtable.setValueAt(found, i, jtable.getColumn("ROOMID").getModelIndex());
+                        jtable.setValueAt(found, i, jtable.getColumn(convertTableCaption("ROOMID")).getModelIndex());
                     }
-                    jtable.getColumnModel().getColumn(jtable.getColumn("ROOMID").getModelIndex()).setCellEditor(new DefaultCellEditor(comboBox));
+                    jtable.getColumnModel().getColumn(jtable.getColumn(convertTableCaption("ROOMID")).getModelIndex()).setCellEditor(new DefaultCellEditor(comboBox));
                     break;
                 case "ROOM":
                     comboBox = new JComboBox(getComboBoxDataDB("DEPARTMENT", "NAME").toArray());
-                    query2 = "select name from DEPARTMENT where id=" + jtable.getValueAt(0, jtable.getColumn("DEPARTMENTID").getModelIndex()) + ";";
+                    query2 = "select name from DEPARTMENT where id=" + jtable.getValueAt(0, jtable.getColumn(convertTableCaption("DEPARTMENTID")).getModelIndex()) + ";";
                     found = getComboBoxSingleDataDB(query2);
                     System.out.println("found : " + found);
                     for (int i = 0; i < jtable.getRowCount(); i++) {
-                        jtable.setValueAt(found, i, jtable.getColumn("DEPARTMENTID").getModelIndex());
+                        jtable.setValueAt(found, i, jtable.getColumn(convertTableCaption("DEPARTMENTID")).getModelIndex());
                     }
-                    jtable.getColumnModel().getColumn(jtable.getColumn("DEPARTMENTID").getModelIndex()).setCellEditor(new DefaultCellEditor(comboBox));
+                    jtable.getColumnModel().getColumn(jtable.getColumn(convertTableCaption("DEPARTMENTID")).getModelIndex()).setCellEditor(new DefaultCellEditor(comboBox));
                     break;
                 case "OBJECT":
                     JComboBox comboBoxType = new JComboBox(getComboBoxDataDB("OBJECTTYPE", "NAME").toArray());
@@ -1073,37 +1106,37 @@ public class GeneralProjectClass {
                     JComboBox comboBoxUser = new JComboBox(getComboBoxDataDB("USER", "FIO").toArray());
 
                     for (int i = 0; i < jtable.getRowCount(); i++) {
-                        query2 = "select name from OBJECTTYPE where id=" + jtable.getValueAt(i, jtable.getColumn("TYPEID").getModelIndex()) + ";";
-                        String queryState = "select name from OBJECTSTATE where id=" + jtable.getValueAt(i, jtable.getColumn("STATEID").getModelIndex()) + ";";
-                        String queryUser = "select FIO from USER where id=" + jtable.getValueAt(i, jtable.getColumn("USERID").getModelIndex()) + ";";
+                        query2 = "select name from OBJECTTYPE where id=" + jtable.getValueAt(i, jtable.getColumn(convertTableCaption("TYPEID")).getModelIndex()) + ";";
+                        String queryState = "select name from OBJECTSTATE where id=" + jtable.getValueAt(i, jtable.getColumn(convertTableCaption("STATEID")).getModelIndex()) + ";";
+                        String queryUser = "select FIO from USER where id=" + jtable.getValueAt(i, jtable.getColumn(convertTableCaption("USERID")).getModelIndex()) + ";";
                         found = getComboBoxSingleDataDB(query2);
                         String foundState = getComboBoxSingleDataDB(queryState);
                         String foundUser = getComboBoxSingleDataDB(queryUser);
-                        jtable.setValueAt(found, i, jtable.getColumn("TYPEID").getModelIndex());
-                        jtable.setValueAt(foundState, i, jtable.getColumn("STATEID").getModelIndex());
-                        jtable.setValueAt(foundUser, i, jtable.getColumn("USERID").getModelIndex());
+                        jtable.setValueAt(found, i, jtable.getColumn(convertTableCaption("TYPEID")).getModelIndex());
+                        jtable.setValueAt(foundState, i, jtable.getColumn(convertTableCaption("STATEID")).getModelIndex());
+                        jtable.setValueAt(foundUser, i, jtable.getColumn(convertTableCaption("USERID")).getModelIndex());
                     }
 
-                    jtable.getColumnModel().getColumn(jtable.getColumn("TYPEID").getModelIndex()).setCellEditor(new DefaultCellEditor(comboBoxType));
-                    jtable.getColumnModel().getColumn(jtable.getColumn("STATEID").getModelIndex()).setCellEditor(new DefaultCellEditor(comboBoxState));
-                    jtable.getColumnModel().getColumn(jtable.getColumn("USERID").getModelIndex()).setCellEditor(new DefaultCellEditor(comboBoxUser));
+                    jtable.getColumnModel().getColumn(jtable.getColumn(convertTableCaption("TYPEID")).getModelIndex()).setCellEditor(new DefaultCellEditor(comboBoxType));
+                    jtable.getColumnModel().getColumn(jtable.getColumn(convertTableCaption("STATEID")).getModelIndex()).setCellEditor(new DefaultCellEditor(comboBoxState));
+                    jtable.getColumnModel().getColumn(jtable.getColumn(convertTableCaption("USERID")).getModelIndex()).setCellEditor(new DefaultCellEditor(comboBoxUser));
                     break;
 
                 case "OBJECTHISTORY":
                     int rowHeight = jtable.getRowHeight();
                     for (int i = 0; i < jtable.getRowCount(); i++) {
-                        String queryObject = "select name from OBJECT where id=" + jtable.getValueAt(i, jtable.getColumn("OBJECTID").getModelIndex()) + ";";
-                        String queryState = "select name from OBJECTSTATE where id=" + jtable.getValueAt(i, jtable.getColumn("STATEID").getModelIndex()) + ";";
-                        String queryUser = "select FIO from USER where id=" + jtable.getValueAt(i, jtable.getColumn("USERID").getModelIndex()) + ";";
+                        String queryObject = "select name from OBJECT where id=" + jtable.getValueAt(i, jtable.getColumn(convertTableCaption("OBJECTID")).getModelIndex()) + ";";
+                        String queryState = "select name from OBJECTSTATE where id=" + jtable.getValueAt(i, jtable.getColumn(convertTableCaption("STATEID")).getModelIndex()) + ";";
+                        String queryUser = "select FIO from USER where id=" + jtable.getValueAt(i, jtable.getColumn(convertTableCaption("USERID")).getModelIndex()) + ";";
                         String foundObject = getComboBoxSingleDataDB(queryObject);
                         String foundState = getComboBoxSingleDataDB(queryState);
                         String foundUser = getComboBoxSingleDataDB(queryUser);
                         System.out.println("found : " + foundObject);
                         System.out.println("found : " + foundState);
                         System.out.println("found : " + foundUser);
-                        jtable.setValueAt(foundObject, i, jtable.getColumn("OBJECTID").getModelIndex());
-                        jtable.setValueAt(foundState, i, jtable.getColumn("STATEID").getModelIndex());
-                        jtable.setValueAt(foundUser, i, jtable.getColumn("USERID").getModelIndex());
+                        jtable.setValueAt(foundObject, i, jtable.getColumn(convertTableCaption("OBJECTID")).getModelIndex());
+                        jtable.setValueAt(foundState, i, jtable.getColumn(convertTableCaption("STATEID")).getModelIndex());
+                        jtable.setValueAt(foundUser, i, jtable.getColumn(convertTableCaption("USERID")).getModelIndex());
 
 //                        for (int column = 0; column < jtable.getColumnCount(); column++)
 //                        {
@@ -1118,7 +1151,7 @@ public class GeneralProjectClass {
                     DatePickerCellEditor datePickerCellEditor = new DatePickerCellEditor(format);
                     datePickerCellEditor.setClickCountToStart(-1);
                     datePickerCellEditor.setFormats(format);
-                    jtable.getColumnModel().getColumn(jtable.getColumn("DATE").getModelIndex()).setCellEditor(datePickerCellEditor);
+                    jtable.getColumnModel().getColumn(jtable.getColumn(convertTableCaption("DATE")).getModelIndex()).setCellEditor(datePickerCellEditor);
                     break;
                 default:
                     System.out.println("unknown replacement comboBox");

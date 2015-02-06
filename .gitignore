@@ -2,7 +2,7 @@
 *.iml
 target/
 tmp/*
-newBase/*
+newBASE/*
 OLD_base.db
 eans/*
 report/*
