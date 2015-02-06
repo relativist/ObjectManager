@@ -4,5 +4,6 @@ target/
 tmp/*
 newBASE/*
 OLD_base.db
-eans/*
-report/*
+*.png
+report*.docx
+report*.pdf
