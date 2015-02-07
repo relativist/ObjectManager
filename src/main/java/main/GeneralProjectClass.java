@@ -20,7 +20,7 @@ import java.util.List;
 
 public class GeneralProjectClass {
     public static String DBASE_PATH = "jdbc:sqlite:./base.db";
-    public static final String VERSION = "0.55";
+    public static final String VERSION = "0.56";
     public JButton buttonSearch;
     public JButton buttonAdd;
     public JButton buttonBack;
@@ -437,7 +437,7 @@ public class GeneralProjectClass {
             c.setAutoCommit(true);
             stmt = c.createStatement();
             String query = "";
-            String changeMeCaption = "Change Me "+String.valueOf(System.currentTimeMillis());
+            String changeMeCaption = "ИЗМЕНИ "+String.valueOf(System.currentTimeMillis());
             String table = historyMove.peek().get("table");
             switch (table.toUpperCase()) {
                 case "ROOM":
@@ -445,7 +445,7 @@ public class GeneralProjectClass {
                     if(departmentId.length()<1)
                         departmentId="1";
                     updateDB("update "+table+" set name=\""+changeMeCaption+"\" where name=\"\";");
-                    query = "INSERT INTO room (name,DESCRIPTION,DEPARTMENTID) VALUES (\""+changeMeCaption+"\",\"\","+departmentId+");";
+                    query = "INSERT INTO room (name,DESCRIPTION,DEPARTMENTID) VALUES (\"\",\"\","+departmentId+");";
                     stmt.executeUpdate(query);
                     break;
                 case "DEPARTMENT":
@@ -458,7 +458,8 @@ public class GeneralProjectClass {
                     String roomId = historyMove.peek().get("query").replaceAll("\\D", "");
                     if(roomId.length()<1)
                         roomId="1";
-                    query = "INSERT INTO user (fio,job,ROOMID) VALUES (\""+changeMeCaption+"\",\"\","+roomId+");";
+                    updateDB("update "+table+" set fio=\""+changeMeCaption+"\" where fio=\"\";");
+                    query = "INSERT INTO user (fio,job,ROOMID) VALUES (\"\",\"\","+roomId+");";
                     stmt.executeUpdate(query);
                     break;
                 case "OBJECT":
@@ -470,11 +471,13 @@ public class GeneralProjectClass {
                     stmt.executeUpdate(query);
                     break;
                 case "OBJECTTYPE":
-                    query = "INSERT INTO OBJECTTYPE (NAME,DESCRIPTION) VALUES (\""+changeMeCaption+"\",\"\");";
+                    query = "INSERT INTO OBJECTTYPE (NAME,DESCRIPTION) VALUES (\"\",\"\");";
+                    updateDB("update "+table+" set name=\""+changeMeCaption+"\" where name=\"\";");
                     stmt.executeUpdate(query);
                     break;
                 case "OBJECTSTATE":
-                    query = "INSERT INTO OBJECTSTATE (NAME) VALUES (\""+changeMeCaption+"\");";
+                    updateDB("update "+table+" set name=\""+changeMeCaption+"\" where name=\"\";");
+                    query = "INSERT INTO OBJECTSTATE (NAME) VALUES (\"\");";
                     stmt.executeUpdate(query);
                     break;
                 default:
@@ -516,6 +519,22 @@ public class GeneralProjectClass {
         }
     }
 
+    public void focusOnFirstJtableRow(){
+        if(jtable.getRowCount()==0)
+            return;
+        jtable.requestFocus();
+        jtable.setRowSelectionInterval(0,0);
+        jtable.setColumnSelectionInterval(1,1);
+    }
+
+    public void focusOnLastJtableRow(){
+        if(jtable.getRowCount()==0)
+            return;
+        jtable.requestFocus();
+        jtable.setRowSelectionInterval(jtable.getRowCount()-1, jtable.getRowCount()-1);
+        jtable.setColumnSelectionInterval(1,1);
+    }
+
     public void addComponentsToPane(final Container paneMain) throws SQLException, ClassNotFoundException {
 
         paneMain.setLayout(new BorderLayout());
@@ -548,14 +567,10 @@ public class GeneralProjectClass {
             }
 
         }
-//        frame.setTitle(resultPathString.toString().replaceAll("^ > ",""));
-
-//        JLabel textPath = new JLabel("<html>"+resultPathString.toString().replaceAll("^ > ","")+"</html>");
         JTextField textPath = new JTextField(resultPathString.toString().replaceAll("^ > ",""));
         textPath.setEditable(false);
         textPath.setEnabled(false);
         textPath.setDisabledTextColor(Color.BLACK);
-
 //        textPath.setFont(new Font("Serif", Font.BOLD, 11));
 //        textPath.setFont(new Font("Courier New", Font.BOLD, 11));
         textPath.setFont(new Font("TimesRoman", Font.BOLD, 11));
@@ -592,22 +607,22 @@ public class GeneralProjectClass {
                         case KeyEvent.VK_N:
                             System.out.println("HOT KEY PRESSED N = new row will add");
                             buttonAdd.doClick();
-                            jtable.requestFocus();
+                            focusOnFirstJtableRow();
                             break;
                         case KeyEvent.VK_LEFT:
                             System.out.println("HOT KEY PRESSED LEFT = go back by path");
                             buttonBack.doClick();
-                            jtable.requestFocus();
+                            focusOnFirstJtableRow();
                             break;
                         case KeyEvent.VK_BACK_SPACE:
                             System.out.println("HOT KEY PRESSED backspace = go back by path");
                             buttonBack.doClick();
-                            jtable.requestFocus();
+                            focusOnFirstJtableRow();
                             break;
                         case KeyEvent.VK_DELETE:
                             System.out.println("HOT KEY PRESSED delete = remove row");
                             buttonDelete.doClick();
-                            jtable.requestFocus();
+                            focusOnFirstJtableRow();
                             break;
                     }
                 }
@@ -630,8 +645,10 @@ public class GeneralProjectClass {
             public void actionPerformed(ActionEvent e) {
                 System.out.println("Поиск");
                 String searchText = textField.getText();
-                if (searchText.replaceAll(" ", "").length() < 1)
+                if (searchText.replaceAll(" ", "").length() < 1) {
+                    textField.requestFocus();
                     return;
+                }
                 System.out.println("searching: " + searchText);
                 System.out.println("search in EAN & CODE: " + searchText);
                 if (Integer.valueOf(getComboBoxSingleDataDB("SELECT count(*) FROM object where ean='" + searchText + "' or cod='" + searchText + "';"))>0){
@@ -639,6 +656,7 @@ public class GeneralProjectClass {
                     System.out.println("found in ean and code:");
                     Map<String, String> user = new HashMap<>();
                     user.put("table", "object");
+                    user.put("name", searchText);
                     user.put("query", query);
                     historyMove.push(user);
                     refreshForm(pane);
@@ -650,6 +668,7 @@ public class GeneralProjectClass {
                     String query =  "SELECT * FROM user where fio like '%" + searchText + "%';";
                     System.out.println(query);
                     user.put("table", "user");
+                    user.put("name", searchText);
                     user.put("query",query);
                     historyMove.push(user);
                     refreshForm(pane);
@@ -659,7 +678,9 @@ public class GeneralProjectClass {
                     JOptionPane.showMessageDialog(pane, "Ни EAN, ни Code, ни FIO не найдены!");
                     textField.setText("");
                 }
+                textField.requestFocus();
             }
+
         });
         c.fill = GridBagConstraints.BOTH;
         c.weightx = 0.5;
@@ -683,6 +704,7 @@ public class GeneralProjectClass {
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
+                focusOnLastJtableRow();
             }
         });
         c.fill = GridBagConstraints.BOTH;
@@ -714,6 +736,7 @@ public class GeneralProjectClass {
                         }
                     }
                 }
+                focusOnFirstJtableRow();
             }
         });
         c.fill = GridBagConstraints.BOTH;
@@ -733,13 +756,11 @@ public class GeneralProjectClass {
                     historyMove.pop();
                     try {
                         refreshForm(pane);
-                        jtable.requestFocus();
-                        jtable.setRowSelectionInterval(0, 0);
-                        jtable.setColumnSelectionInterval(1,1);
                     } catch (Exception e1) {
                         e1.printStackTrace();
                     }
                 }
+                focusOnFirstJtableRow();
             }
         });
         c.fill = GridBagConstraints.BOTH;
@@ -764,6 +785,7 @@ public class GeneralProjectClass {
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
+                focusOnFirstJtableRow();
             }
         });
         c.weightx = 0.5;
@@ -788,6 +810,7 @@ public class GeneralProjectClass {
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
+                focusOnFirstJtableRow();
             }
         });
         c.weightx = 0.5;
@@ -847,6 +870,7 @@ public class GeneralProjectClass {
                         }
                     }
                 }
+                focusOnFirstJtableRow();
             }
         });
         c.weightx = 0.5;
@@ -871,6 +895,7 @@ public class GeneralProjectClass {
                 history.put("name","Ремонт");
                 historyMove.push(history);
                 refreshForm(pane);
+                focusOnFirstJtableRow();
             }
         });
         c.weightx = 0.5;
@@ -881,31 +906,49 @@ public class GeneralProjectClass {
         jtable = new JTable();
         jScrollPane = new JScrollPane(jtable);
         showTable(historyMove.peek().get("query"),pane);
+//        jtable.setCellEditor();
+//        DefaultCellEditor singleclick = new DefaultCellEditor(new JTextField());
+//        singleclick.setClickCountToStart(0);
+//        jtable.setCellEditor(singleclick);
+//        jtable.setCellEditor(new MyTableCellEditor());
+
         jtable.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
                 super.keyReleased(e);
                 if (e.isControlDown()) {
                     switch (e.getKeyCode()) {
+                        case KeyEvent.VK_ENTER:
+                            System.out.println("HOT KEY PRESSED ENTER");
+//                            buttonAdd.doClick();
+                            try {
+                                Robot robot = new Robot();
+                                robot.mousePress(InputEvent.BUTTON3_MASK);
+                                robot.mouseRelease(InputEvent.BUTTON3_MASK);
+                            } catch (AWTException e1) {
+                                e1.printStackTrace();
+                            }
+                            focusOnFirstJtableRow();
+                            break;
                         case KeyEvent.VK_N:
                             System.out.println("HOT KEY PRESSED N = new row will add");
                             buttonAdd.doClick();
-                            jtable.requestFocus();
+                            focusOnFirstJtableRow();
                             break;
                         case KeyEvent.VK_LEFT:
                             System.out.println("HOT KEY PRESSED LEFT = go back by path");
                             buttonBack.doClick();
-                            jtable.requestFocus();
+                            focusOnFirstJtableRow();
                             break;
                         case KeyEvent.VK_BACK_SPACE:
                             System.out.println("HOT KEY PRESSED backspace = go back by path");
                             buttonBack.doClick();
-                            jtable.requestFocus();
+                            focusOnFirstJtableRow();
                             break;
                         case KeyEvent.VK_DELETE:
                             System.out.println("HOT KEY PRESSED delete = remove row");
                             buttonDelete.doClick();
-                            jtable.requestFocus();
+                            focusOnFirstJtableRow();
                             break;
                     }
                 }
@@ -930,6 +973,7 @@ public class GeneralProjectClass {
                             user.put("query", "SELECT * FROM USER WHERE ROOMID="+id+";");
                             historyMove.push(user);
                             refreshForm(pane);
+                            focusOnFirstJtableRow();
                             break;
                         case "DEPARTMENT":
                             Map<String, String> department = new HashMap<>();
@@ -938,6 +982,7 @@ public class GeneralProjectClass {
                             department.put("query", "SELECT * FROM ROOM WHERE DEPARTMENTID="+id+";");
                             historyMove.push(department);
                             refreshForm(pane);
+                            focusOnFirstJtableRow();
                             break;
                         case "USER":
                             Map<String, String> object = new HashMap<>();
@@ -946,6 +991,7 @@ public class GeneralProjectClass {
                             object.put("query", "SELECT * FROM OBJECT WHERE USERID="+id+";");
                             historyMove.push(object);
                             refreshForm(pane);
+                            focusOnFirstJtableRow();
                             break;
                         case "OBJECT":
                             switch (columnName) {
@@ -960,6 +1006,7 @@ public class GeneralProjectClass {
                                     } catch (Exception e1) {
                                         e1.printStackTrace();
                                     }
+                                    focusOnFirstJtableRow();
                                     break;
                                 case "STATEID":
                                     Map<String, String> state = new HashMap<>();
@@ -972,6 +1019,7 @@ public class GeneralProjectClass {
                                     } catch (Exception e1) {
                                         e1.printStackTrace();
                                     }
+                                    focusOnFirstJtableRow();
                                     break;
                                 case "EAN":
                                     System.out.printf("go to object history. obj id = "+id);
@@ -985,6 +1033,7 @@ public class GeneralProjectClass {
                                     } catch (Exception e1) {
                                         e1.printStackTrace();
                                     }
+                                    focusOnFirstJtableRow();
                                     break;
                                 default:
                                     System.out.println("unknown object go to");
@@ -1063,6 +1112,7 @@ public class GeneralProjectClass {
                                 } catch (Exception e1) {
                                     e1.printStackTrace();
                                 }
+                                focusOnFirstJtableRow();
                             }
                         }
                     });
@@ -1092,6 +1142,7 @@ public class GeneralProjectClass {
                                 } catch (Exception e1) {
                                     e1.printStackTrace();
                                 }
+                                focusOnFirstJtableRow();
                             }
                         }
                     });
@@ -1122,6 +1173,7 @@ public class GeneralProjectClass {
                                 } catch (Exception e1) {
                                     e1.printStackTrace();
                                 }
+                                focusOnFirstJtableRow();
                             }
                         }
                     });
@@ -1142,6 +1194,7 @@ public class GeneralProjectClass {
                                 } catch (Exception e1) {
                                     e1.printStackTrace();
                                 }
+                                focusOnFirstJtableRow();
                             }
                         }
                     });
@@ -1180,14 +1233,6 @@ public class GeneralProjectClass {
                         jtable.setValueAt(foundObject, i, jtable.getColumn(convertTableCaption("OBJECTID")).getModelIndex());
                         jtable.setValueAt(foundState, i, jtable.getColumn(convertTableCaption("STATEID")).getModelIndex());
                         jtable.setValueAt(foundUser, i, jtable.getColumn(convertTableCaption("USERID")).getModelIndex());
-
-//                        for (int column = 0; column < jtable.getColumnCount(); column++)
-//                        {
-//                            Component comp = jtable.prepareRenderer(jtable.getCellRenderer(i, column), i, column);
-//                            rowHeight = Math.max(rowHeight, comp.getPreferredSize().height);
-//                        }
-//                        jtable.setRowHeight(i, rowHeight*2);
-
                     }
 
                     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
