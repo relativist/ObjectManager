@@ -53,6 +53,7 @@ public class GeneralProjectClass {
         if(result.equals(caption))
             System.out.println("unknown convertation "+caption);
 
+        System.out.println("");
 
         return result;
     }
